@@ -110,7 +110,10 @@ def generate_prime(n: int) -> int:
     NOTE: This needs to be sufficiently fast or you may not get
     any credit even if you correctly return a prime number.
     '''
-    raise NotImplementedError
+    while True:
+            candidate = random_n_bit_odd_int(n)
+            if is_probable_prime(candidate):
+                return candidate
 
 
 def generate_keypair(p: int, q: int) -> Tuple[Key, Key]:
@@ -124,6 +127,7 @@ def generate_keypair(p: int, q: int) -> Tuple[Key, Key]:
     PubKey = (n,e) and Private Key = (n,d)
     '''
     raise NotImplementedError
+    
 
 
 def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
