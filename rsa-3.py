@@ -16,15 +16,50 @@
 # -----------------------------------------------------------------------
 
 from typing import Tuple
-import random
-import math
 from random import randint
+import math
 
 # Type defs
 Key = Tuple[int, int]
 
 # Helper functions
 
+def gcd(a: int, b: int) -> int:
+    while b != 0:
+        a, b = b, a % b
+    return abs (a)
+
+def extended_gcd(a: int, b: int) -> Tuple[int, int, int]:
+    if a == 0:
+        return b, 0, 1
+    gcd, x1, y1 = extended_gcd(b % a, a)
+    x = y1 - (b // a) * x1
+    y = x1
+    return gcd, x, y
+
+def mod_inverse(e: int, phi: int) -> int:
+    gcd, x, y = extended_gcd(e, phi)
+    if gcd != 1:
+        raise ValueError("Modular inverse does not exist")
+    else:
+        return x % phi
+    
+def modular_exponentiation(base: int, exponent: int, modulus: int) -> int:
+    result = 1
+    base = base % modulus
+    while exponent > 0:
+        if (exponent % 2) == 1:
+            result = (result * base) % modulus
+        exponent = exponent >> 1
+        base = (base * base) % modulus
+    return result
+
+def random_n_bit_odd_int(n: int) -> int:
+
+    x = randint(0, (1 << n ) - 1)
+    x |= (1 << (n - 1))  # Ensure n-bit
+    x |= 1               # Ensure odd
+    return x
 
 def generate_prime(n: int) -> int:
     '''
