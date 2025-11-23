@@ -218,4 +218,17 @@ def num_to_chunk( num, chunksize ):
     Returns: chunk (some substring)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
-    raise NotImplementedError
+    if CHUNK_MODULUS is None:
+        raise ValueError("Chunk modulus not set")
+
+    n = CHUNK_MODULUS
+    chars = []
+
+    # Recover characters in reverse order using base n expansion
+    for _ in range(chunksize):
+        v = num % n
+        num //= n
+        chars.append(chr(v))
+        
+    chars.reverse()
+    return ''.join(chars)
