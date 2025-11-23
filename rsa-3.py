@@ -126,8 +126,29 @@ def generate_keypair(p: int, q: int) -> Tuple[Key, Key]:
     Returns: Keypair in the form of (Pub Key, Private Key)
     PubKey = (n,e) and Private Key = (n,d)
     '''
-    raise NotImplementedError
+    if p == q:
+        raise ValueError("p and q must be distinct primes")
     
+    if not is_probable_prime(p) or not is_probable_prime(q):
+        raise ValueError("p and q must be prime numbers")
+    
+    n = p * q
+
+    phi = (p - 1) * (q - 1)
+
+    e = 65537  
+
+    if gcd(e, phi) != 1:
+        while True :
+            e = randint(2, phi - 1)
+            if gcd(e, phi) == 1:
+                break
+    
+    d = mod_inverse(e, phi)
+
+    pub_key = (n, e)
+    priv_key = (n, d)
+    return pub_key, priv_key
 
 
 def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
