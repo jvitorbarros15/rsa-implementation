@@ -178,6 +178,11 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     '''
     raise NotImplementedError
 
+CHUNK_MODULUS = None
+
+def set_chunk_modulus(n: int) -> None:
+    global CHUNK_MODULUS
+    CHUNK_MODULUS = n
 
 def chunk_to_num( chunk ):
     '''
@@ -189,7 +194,18 @@ def chunk_to_num( chunk ):
     Returns: r (some integer)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
-    raise NotImplementedError
+    if CHUNK_MODULUS is None:
+        raise ValueError("Chunk modulus not set")
+
+    n = CHUNK_MODULUS
+    result = 0
+
+    # Interpret the chunk as a base n number
+    for ch in chunk:
+        v = ord(ch)          # Get ASCII value
+        result = result * n + v
+
+    return result
 
 
 def num_to_chunk( num, chunksize ):
