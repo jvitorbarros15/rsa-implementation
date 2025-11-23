@@ -61,6 +61,46 @@ def random_n_bit_odd_int(n: int) -> int:
     x |= 1               # Ensure odd
     return x
 
+def is_probable_prime(n: int, rounds: int = 20) -> bool:
+    # Reject small values that are not prime
+    if n < 2:
+        return False
+    
+    # Quick elimination using a list of known small primes
+    small_primes = [2,3,5,7,11,13,17,19,23,29]
+    if n in small_primes:
+        return True
+    for p in small_primes:
+        if n % p == 0:
+            return False
+    
+    d = n - 1
+    r = 0
+    while d % 2 == 0:
+        d //= 2
+        r += 1
+    
+    # Each round uses a random base a to test whether n behaves like a prime
+    for _ in range(rounds):
+        a = randint(2, n - 2)
+        x = modular_exponentiation(a, d, n)
+        
+        if x == 1 or x == n - 1:
+            continue
+        
+        composite = True
+        for _ in range(r - 1):
+            x = (x * x) % n
+            if x == n - 1:
+                composite = False
+                break
+        
+        if composite:
+            return False
+    
+    return True
+
+
 def generate_prime(n: int) -> int:
     '''
     Description: Generate an n-bit prime number
