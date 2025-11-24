@@ -4,6 +4,8 @@
 import importlib.util
 import os
 
+from numpy import gcd
+
 _rsa_path = os.path.join(os.path.dirname(__file__), "rsa-3.py")
 spec = importlib.util.spec_from_file_location("rsa_module", _rsa_path)
 rsa = importlib.util.module_from_spec(spec)
@@ -20,7 +22,9 @@ for _name in (
     "generate_keypair",
     "set_chunk_modulus",
     "chunk_to_num",
-    "num_to_chunk",     
+    "num_to_chunk",         
+    "rsa_encrypt",       
+    "rsa_decrypt",
 ):
 
     if not hasattr(rsa, _name):
@@ -112,6 +116,28 @@ def test_chunk_roundtrip():
     assert chunk == recovered
     print("chunk roundtrip ok")
 
+def test_rsa_full_pipeline():
+    print("Testing RSA full pipeline...")
+
+    # Small primes for sanity check
+    p = 61
+    q = 53
+    pub, priv = generate_keypair(p, q)
+
+    message = "hello world"
+    blocksize = 2
+
+    encrypted = rsa_encrypt(message, pub, blocksize)
+    decrypted = rsa_decrypt(encrypted, priv, blocksize)
+
+    print("Original:", message)
+    print("Encrypted:", encrypted)
+    print("Decrypted:", decrypted)
+
+    assert decrypted == message
+    print("RSA full pipeline ok")
+
+
 
 if __name__ == "__main__":
     test_gcd()
@@ -120,5 +146,6 @@ if __name__ == "__main__":
     test_prime_generation()
     test_keypair_and_chunk()
     test_chunk_roundtrip()   
+    test_rsa_full_pipeline()
     print("All tests passed")
 

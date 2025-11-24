@@ -178,13 +178,11 @@ def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
     encrypted_chunks = []
 
     for chunk in chunks:
-        # Convert chunk to integer
-        chunk_value = chunk_to_num(chunk)
-
-        # Encrypt with RSA using your modular exponentiation
-        c = modular_exponentiation(chunk_value, e, n)
-
+        v = chunk_to_num(chunk)
+        c = modular_exponentiation(v, e, n)
         encrypted_chunks.append(c)
+
+    encrypted_chunks.append(pad_len)
 
     return encrypted_chunks
 
@@ -200,8 +198,28 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     NOTE: You CANNOT use the built-in pow function (or any similar function)
     here.
     '''
-    raise NotImplementedError
+    n, d = priv_key
 
+    # Set modulus for chunk conversion
+    set_chunk_modulus(n)
+
+    pad_len = c[-1]
+    c = c[:-1]
+
+    recovered_text = ""
+
+    for cipher in c:
+        m_int = modular_exponentiation(cipher, d, n)
+        chunk = num_to_chunk(m_int, blocksize)
+        recovered_text += chunk
+
+    # Remove padding spaces added during encryption
+    if pad_len > 0:
+        recovered_text = recovered_text[:-pad_len]
+
+    return recovered_text.rstrip()
+
+# Global variable to hold modulus for chunk conversion
 CHUNK_MODULUS = None
 
 def set_chunk_modulus(n: int) -> None:
