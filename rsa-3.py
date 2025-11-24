@@ -220,11 +220,10 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     return recovered_text.rstrip()
 
 # Global variable to hold modulus for chunk conversion
-CHUNK_MODULUS = None
+CHUNK_BASE = 97
 
 def set_chunk_modulus(n: int) -> None:
-    global CHUNK_MODULUS
-    CHUNK_MODULUS = n
+    return
 
 def chunk_to_num( chunk ):
     '''
@@ -236,16 +235,15 @@ def chunk_to_num( chunk ):
     Returns: r (some integer)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
-    if CHUNK_MODULUS is None:
-        raise ValueError("Chunk modulus not set")
-
-    n = CHUNK_MODULUS
     result = 0
 
-    # Interpret the chunk as a base n number
     for ch in chunk:
-        v = ord(ch)          # Get ASCII value
-        result = result * n + v
+        v = ord(ch)
+        if v < 32 or v > 128:
+            raise ValueError("Character out of supported ASCII range 32 to 128")
+
+        digit = v - 32  # normalize to range 0 through 96
+        result = result * CHUNK_BASE + digit
 
     return result
 
@@ -260,17 +258,12 @@ def num_to_chunk( num, chunksize ):
     Returns: chunk (some substring)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
-    if CHUNK_MODULUS is None:
-        raise ValueError("Chunk modulus not set")
-
-    n = CHUNK_MODULUS
     chars = []
 
-    # Recover characters in reverse order using base n expansion
     for _ in range(chunksize):
-        v = num % n
-        num //= n
-        chars.append(chr(v))
-        
+        digit = num % CHUNK_BASE
+        num //= CHUNK_BASE
+        chars.append(chr(digit + 32))  
+
     chars.reverse()
     return ''.join(chars)
