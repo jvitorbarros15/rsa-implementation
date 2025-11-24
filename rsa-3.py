@@ -162,7 +162,31 @@ def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
     NOTE: You CANNOT use the built-in pow function (or any similar function)
     here.
     '''
-    raise NotImplementedError
+    n, e = pub_key
+
+    # Set modulus for chunk conversion
+    set_chunk_modulus(n)
+
+    # Pad the message so its length is a multiple of blocksize
+    if len(m) % blocksize != 0:
+        pad_len = blocksize - (len(m) % blocksize)
+        m = m + (" " * pad_len)
+
+    # Split into chunks
+    chunks = [m[i:i+blocksize] for i in range(0, len(m), blocksize)]
+
+    encrypted_chunks = []
+
+    for chunk in chunks:
+        # Convert chunk to integer
+        chunk_value = chunk_to_num(chunk)
+
+        # Encrypt with RSA using your modular exponentiation
+        c = modular_exponentiation(chunk_value, e, n)
+
+        encrypted_chunks.append(c)
+
+    return encrypted_chunks
 
 
 def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
