@@ -4,6 +4,8 @@
 import importlib.util
 import os
 
+from numpy import gcd
+
 _rsa_path = os.path.join(os.path.dirname(__file__), "rsa-3.py")
 spec = importlib.util.spec_from_file_location("rsa_module", _rsa_path)
 rsa = importlib.util.module_from_spec(spec)
@@ -18,9 +20,10 @@ for _name in (
     "is_probable_prime",
     "generate_prime",
     "generate_keypair",
-    "set_chunk_modulus",
     "chunk_to_num",
-    "num_to_chunk",     
+    "num_to_chunk",         
+    "rsa_encrypt",       
+    "rsa_decrypt",
 ):
 
     if not hasattr(rsa, _name):
@@ -83,10 +86,7 @@ def test_keypair_and_chunk():
     print("Public key:", pub)
     print("Private key:", priv)
 
-    # set modulus for chunk conversion
-    set_chunk_modulus(n)
-
-    # chunk tests
+    # chunk tests, these do not depend on n anymore
     v1 = chunk_to_num("he")
     v2 = chunk_to_num("ll")
     v3 = chunk_to_num("o ")
@@ -95,15 +95,9 @@ def test_keypair_and_chunk():
     assert v1 != v2 != v3
     print("keypair and chunk_to_num ok")
 
+
 def test_chunk_roundtrip():
     print("Testing chunk_to_num and num_to_chunk roundtrip...")
-    p = 61
-    q = 53
-    pub, _ = generate_keypair(p, q)
-    n, _ = pub
-
-    set_chunk_modulus(n)
-
     chunk = "he"
     num = chunk_to_num(chunk)
     recovered = num_to_chunk(num, len(chunk))
@@ -113,12 +107,37 @@ def test_chunk_roundtrip():
     print("chunk roundtrip ok")
 
 
+def test_rsa_full_pipeline():
+    print("Testing RSA full pipeline...")
+
+    # Use larger primes so chunk values are safely less than n
+    p = generate_prime(16)
+    q = generate_prime(16)
+    while q == p:
+        q = generate_prime(16)
+
+    pub, priv = generate_keypair(p, q)
+
+    message = "hello world"
+    blocksize = 2
+
+    encrypted = rsa_encrypt(message, pub, blocksize)
+    decrypted = rsa_decrypt(encrypted, priv, blocksize)
+
+    print("Original:", message)
+    print("Encrypted:", encrypted)
+    print("Decrypted:", decrypted)
+
+    assert decrypted == message
+    print("RSA full pipeline ok")
+
+
 if __name__ == "__main__":
     test_gcd()
     test_extended_gcd_and_modinv()
     test_modexp()
     test_prime_generation()
     test_keypair_and_chunk()
-    test_chunk_roundtrip()   
+    test_chunk_roundtrip()
+    test_rsa_full_pipeline()
     print("All tests passed")
-

@@ -110,7 +110,10 @@ def generate_prime(n: int) -> int:
     NOTE: This needs to be sufficiently fast or you may not get
     any credit even if you correctly return a prime number.
     '''
-    raise NotImplementedError
+    while True:
+            candidate = random_n_bit_odd_int(n)
+            if is_probable_prime(candidate):
+                return candidate
 
 
 def generate_keypair(p: int, q: int) -> Tuple[Key, Key]:
@@ -123,7 +126,29 @@ def generate_keypair(p: int, q: int) -> Tuple[Key, Key]:
     Returns: Keypair in the form of (Pub Key, Private Key)
     PubKey = (n,e) and Private Key = (n,d)
     '''
-    raise NotImplementedError
+    if p == q:
+        raise ValueError("p and q must be distinct primes")
+    
+    if not is_probable_prime(p) or not is_probable_prime(q):
+        raise ValueError("p and q must be prime numbers")
+    
+    n = p * q
+
+    phi = (p - 1) * (q - 1)
+
+    e = 65537  
+
+    if gcd(e, phi) != 1:
+        while True :
+            e = randint(2, phi - 1)
+            if gcd(e, phi) == 1:
+                break
+    
+    d = mod_inverse(e, phi)
+
+    pub_key = (n, e)
+    priv_key = (n, d)
+    return pub_key, priv_key
 
 
 def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
@@ -137,7 +162,29 @@ def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
     NOTE: You CANNOT use the built-in pow function (or any similar function)
     here.
     '''
-    raise NotImplementedError
+    n, e = pub_key
+
+    # Set modulus for chunk conversion
+    set_chunk_modulus(n)
+
+    # Pad the message so its length is a multiple of blocksize
+    if len(m) % blocksize != 0:
+        pad_len = blocksize - (len(m) % blocksize)
+        m = m + (" " * pad_len)
+
+    # Split into chunks
+    chunks = [m[i:i+blocksize] for i in range(0, len(m), blocksize)]
+
+    encrypted_chunks = []
+
+    for chunk in chunks:
+        v = chunk_to_num(chunk)
+        c = modular_exponentiation(v, e, n)
+        encrypted_chunks.append(c)
+
+    encrypted_chunks.append(pad_len)
+
+    return encrypted_chunks
 
 
 def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
@@ -151,8 +198,32 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     NOTE: You CANNOT use the built-in pow function (or any similar function)
     here.
     '''
-    raise NotImplementedError
+    n, d = priv_key
 
+    # Set modulus for chunk conversion
+    set_chunk_modulus(n)
+
+    pad_len = c[-1]
+    c = c[:-1]
+
+    recovered_text = ""
+
+    for cipher in c:
+        m_int = modular_exponentiation(cipher, d, n)
+        chunk = num_to_chunk(m_int, blocksize)
+        recovered_text += chunk
+
+    # Remove padding spaces added during encryption
+    if pad_len > 0:
+        recovered_text = recovered_text[:-pad_len]
+
+    return recovered_text.rstrip()
+
+# Global variable to hold modulus for chunk conversion
+CHUNK_BASE = 97
+
+def set_chunk_modulus(n: int) -> None:
+    return
 
 def chunk_to_num( chunk ):
     '''
@@ -164,7 +235,17 @@ def chunk_to_num( chunk ):
     Returns: r (some integer)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
-    raise NotImplementedError
+    result = 0
+
+    for ch in chunk:
+        v = ord(ch)
+        if v < 32 or v > 128:
+            raise ValueError("Character out of supported ASCII range 32 to 128")
+
+        digit = v - 32  # normalize to range 0 through 96
+        result = result * CHUNK_BASE + digit
+
+    return result
 
 
 def num_to_chunk( num, chunksize ):
@@ -177,4 +258,12 @@ def num_to_chunk( num, chunksize ):
     Returns: chunk (some substring)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
-    raise NotImplementedError
+    chars = []
+
+    for _ in range(chunksize):
+        digit = num % CHUNK_BASE
+        num //= CHUNK_BASE
+        chars.append(chr(digit + 32))  
+
+    chars.reverse()
+    return ''.join(chars)
