@@ -164,27 +164,20 @@ def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
     '''
     n, e = pub_key
 
-    # Set modulus for chunk conversion
-    set_chunk_modulus(n)
-
-    # Pad the message so its length is a multiple of blocksize
+    # Pad with spaces up to a multiple of blocksize
     if len(m) % blocksize != 0:
         pad_len = blocksize - (len(m) % blocksize)
         m = m + (" " * pad_len)
 
-    # Split into chunks
     chunks = [m[i:i+blocksize] for i in range(0, len(m), blocksize)]
-
-    encrypted_chunks = []
+    encrypted = []
 
     for chunk in chunks:
         v = chunk_to_num(chunk)
         c = modular_exponentiation(v, e, n)
-        encrypted_chunks.append(c)
+        encrypted.append(c)
 
-    encrypted_chunks.append(pad_len)
-
-    return encrypted_chunks
+    return encrypted
 
 
 def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
@@ -200,27 +193,18 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     '''
     n, d = priv_key
 
-    # Set modulus for chunk conversion
-    set_chunk_modulus(n)
+    recovered = ""
 
-    pad_len = c[-1]
-    c = c[:-1]
-
-    recovered_text = ""
-
-    for cipher in c:
-        m_int = modular_exponentiation(cipher, d, n)
+    for cipher_int in c:
+        m_int = modular_exponentiation(cipher_int, d, n)
         chunk = num_to_chunk(m_int, blocksize)
-        recovered_text += chunk
+        recovered += chunk
 
-    # Remove padding spaces added during encryption
-    if pad_len > 0:
-        recovered_text = recovered_text[:-pad_len]
-
-    return recovered_text.rstrip()
+    # Removed padding spaces that were added during encryption
+    return recovered.rstrip(" ")
 
 # Global variable to hold modulus for chunk conversion
-CHUNK_BASE = 97
+CHUNK_BASE = 96
 
 def set_chunk_modulus(n: int) -> None:
     return
@@ -236,15 +220,15 @@ def chunk_to_num( chunk ):
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
     result = 0
+    factor = 1
 
     for ch in chunk:
         v = ord(ch)
-        if v < 32 or v > 128:
-            raise ValueError("Character out of supported ASCII range 32 to 128")
-
-        digit = v - 32  # normalize to range 0 through 96
-        result = result * CHUNK_BASE + digit
-
+        if v < 32 or v > 127:
+            raise ValueError("Character out of supported ASCII range 32 to 127")
+        digit = v - 32    
+        result += digit * factor
+        factor *= CHUNK_BASE
     return result
 
 
@@ -263,7 +247,8 @@ def num_to_chunk( num, chunksize ):
     for _ in range(chunksize):
         digit = num % CHUNK_BASE
         num //= CHUNK_BASE
-        chars.append(chr(digit + 32))  
+        chars.append(chr(digit + 32))
 
-    chars.reverse()
+    # We encoded little endian and recovered in the same order,
+    # so we do NOT reverse here.
     return ''.join(chars)
