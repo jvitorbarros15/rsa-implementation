@@ -165,7 +165,7 @@ def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
     n, e = pub_key
 
     # Pad with spaces up to a multiple of blocksize
-    if len(m) % blocksize != 0:
+    if blocksize > 1 and (len(m) % blocksize) != 0:
         pad_len = blocksize - (len(m) % blocksize)
         m = m + (" " * pad_len)
 
@@ -249,6 +249,4 @@ def num_to_chunk( num, chunksize ):
         num //= CHUNK_BASE
         chars.append(chr(digit + 32))
 
-    # We encoded little endian and recovered in the same order,
-    # so we do NOT reverse here.
     return ''.join(chars)
