@@ -136,13 +136,14 @@ def generate_keypair(p: int, q: int) -> Tuple[Key, Key]:
 
     phi = (p - 1) * (q - 1)
 
-    e = 65537  
-
-    if gcd(e, phi) != 1:
-        while True :
-            e = randint(2, phi - 1)
-            if gcd(e, phi) == 1:
-                break
+    e = 3
+    while e < phi:
+        if gcd(e, phi) == 1:
+            break
+        e += 2  
+    
+    if e >= phi:
+        raise ValueError("Failed to find valid public exponent e")
     
     d = mod_inverse(e, phi)
 
@@ -163,6 +164,7 @@ def rsa_encrypt(m: str, pub_key: Key, blocksize: int) -> int:
     here.
     '''
     n, e = pub_key
+    set_chunk_modulus(n)
 
     # Pad with spaces up to a multiple of blocksize
     if blocksize > 1 and (len(m) % blocksize) != 0:
@@ -192,6 +194,7 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     here.
     '''
     n, d = priv_key
+    set_chunk_modulus(n)
 
     recovered = ""
 
@@ -204,10 +207,11 @@ def rsa_decrypt(c: str, priv_key: Key, blocksize: int) -> int:
     return recovered.rstrip(" ")
 
 # Global variable to hold modulus for chunk conversion
-CHUNK_BASE = 96
+CHUNK_MODULUS = None
 
 def set_chunk_modulus(n: int) -> None:
-    return
+    global CHUNK_MODULUS
+    CHUNK_MODULUS = n
 
 def chunk_to_num( chunk ):
     '''
@@ -219,16 +223,19 @@ def chunk_to_num( chunk ):
     Returns: r (some integer)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
+    if CHUNK_MODULUS is None:
+        raise ValueError("Chunk modulus not set")
+
+    n = CHUNK_MODULUS
     result = 0
-    factor = 1
 
     for ch in chunk:
         v = ord(ch)
-        if v < 32 or v > 127:
-            raise ValueError("Character out of supported ASCII range 32 to 127")
-        digit = v - 32    
-        result += digit * factor
-        factor *= CHUNK_BASE
+        if v < 32 or v > 128:
+            raise ValueError("Character out of supported ASCII range 32 to 128")
+        digit = v - 32               # 0 through 96
+        result = result * n + digit 
+
     return result
 
 
@@ -242,11 +249,22 @@ def num_to_chunk( num, chunksize ):
     Returns: chunk (some substring)
     NOTE: You CANNOT use any built-in function to implement base conversion. 
     '''
+    if CHUNK_MODULUS is None:
+        raise ValueError("Chunk modulus not set")
+
+    n = CHUNK_MODULUS
     chars = []
 
+    # Recover least significant "digit" first
     for _ in range(chunksize):
-        digit = num % CHUNK_BASE
-        num //= CHUNK_BASE
+        digit = num % n
+        num //= n
+
+        if digit < 0 or digit > 96:
+            raise ValueError("Decoded digit out of valid range for ASCII 32 to 128")
+
         chars.append(chr(digit + 32))
 
+    # We took digits from least significant to most significant, so reverse
+    chars.reverse()
     return ''.join(chars)
